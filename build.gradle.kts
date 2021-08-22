@@ -20,12 +20,14 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:3.2.0")
 
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("com.auth0:java-jwt:3.18.1")
     implementation("io.ktor:ktor-serialization:$ktorVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
     implementation("org.slf4j:slf4j-simple:1.7.25")
+    implementation("org.kodein.di:kodein-di:7.6.0")
 }
 
 tasks.test {
