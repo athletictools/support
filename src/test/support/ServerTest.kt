@@ -180,4 +180,42 @@ class ServerTest {
             }
         }
     }
+
+    @Test
+    fun testGetChat_AuthUserAllowed() {
+        val url = "/public/get-chat/$schoolId"
+        withTestApplication({ client(service = mock()) }) {
+            handleRequest(HttpMethod.Post, url).apply {
+                assertEquals(HttpStatusCode.Unauthorized, response.status())
+            }
+        }
+    }
+
+    @Test
+    fun testGetChat() {
+        val expectedContent = Json.encodeToString(ChatSchema.fromChat(chat))
+        val supportServiceMock = mock<SupportService> {
+            on { getChat(1) }.doReturn(chat)
+        }
+
+        withTestApplication({ client(service = supportServiceMock) }) {
+            handleRequestWithUserId(HttpMethod.Get, "/public/get-chat/$schoolId", clientUser.id).apply {
+                assertEquals(HttpStatusCode.OK, response.status())
+                assertEquals(expectedContent, response.content)
+            }
+        }
+    }
+
+    @Test
+    fun testGetChat_NotFound_Return404() {
+        val supportServiceMock = mock<SupportService> {
+            on { getChat(1) }.doReturn(null)
+        }
+
+        withTestApplication({ client(service = supportServiceMock) }) {
+            handleRequestWithUserId(HttpMethod.Get, "/public/get-chat/$schoolId", clientUser.id).apply {
+                assertEquals(HttpStatusCode.NotFound, response.status())
+            }
+        }
+    }
 }

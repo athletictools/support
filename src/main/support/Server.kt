@@ -108,12 +108,20 @@ suspend fun Handler.getAdminChats(service: SupportService) {
 suspend fun Handler.getAdminChat(service: SupportService) {
     val schoolId = call.parameters["schoolId"] !!.toInt()
     val chat = service.getChat(schoolId)
+    if (chat == null) {
+        call.respond(HttpStatusCode.NotFound)
+        return
+    }
     call.respond(ChatSchema.fromChat(chat))
 }
 
 suspend fun Handler.getChat(service: SupportService) {
     val schoolId = call.parameters["schoolId"] !!.toInt()
     val chat = service.getChat(schoolId)
+    if (chat == null) {
+        call.respond(HttpStatusCode.NotFound)
+        return
+    }
     call.respond(ChatSchema.fromChat(chat))
 }
 
