@@ -48,7 +48,7 @@ fun Application.client(service: SupportService) {
             get("/get-chat/{schoolId}") {
                 getChat(service)
             }
-            get("/chat/{schoolId}/send") {
+            post("/chat/{schoolId}/send") {
                 sendMessage(service, Author.CLIENT)
             }
         }
@@ -86,7 +86,7 @@ fun Application.admin(service: SupportService) {
             get("/admin-get-chat/{schoolId}") {
                 getAdminChat(service)
             }
-            get("/chat/{schoolId}/admin-send") {
+            post("/chat/{schoolId}/admin-send") {
                 sendMessage(service, Author.SUPPORT)
             }
         }

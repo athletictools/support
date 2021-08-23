@@ -12,6 +12,7 @@ import support.entities.Chat
 import support.entities.Message
 import support.entities.User
 import support.schemas.ChatSchema
+import support.schemas.MessageSchema
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,6 +40,7 @@ fun TestApplicationEngine.handleAdminRequest(
 }
 
 class ServerTest {
+    private val schoolId = 1
     private val supportUser = User(id = 2, fullName = "Support")
     private val clientUser = User(id = 3, fullName = "Client")
     private val message = Message(
@@ -117,10 +119,10 @@ class ServerTest {
     @Test
     fun testGetAdminChat_OnlyAdminAllowed() {
         withTestApplication({ admin(service = mock()) }) {
-            handleRequest(HttpMethod.Get, "/public/admin-get-chat/1").apply {
+            handleRequest(HttpMethod.Get, "/public/admin-get-chat/$schoolId").apply {
                 assertEquals(HttpStatusCode.Unauthorized, response.status())
             }
-            handleRequestWithUserId(HttpMethod.Get, "/public/admin-get-chat/1", clientUser.id).apply {
+            handleRequestWithUserId(HttpMethod.Get, "/public/admin-get-chat/$schoolId", clientUser.id).apply {
                 assertEquals(HttpStatusCode.Forbidden, response.status())
             }
         }
@@ -134,11 +136,48 @@ class ServerTest {
         }
 
         withTestApplication({ admin(service = supportServiceMock) }) {
-            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chat/1", supportUser.id).apply {
+            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chat/$schoolId", supportUser.id).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(expectedContent, response.content)
             }
         }
     }
 
+    @Test
+    fun testAdminSendMessage_OnlyAdminAllowed() {
+        val url = "/public/chat/$schoolId/admin-send"
+        withTestApplication({ admin(service = mock()) }) {
+            handleRequest(HttpMethod.Post, url).apply {
+                assertEquals(HttpStatusCode.Unauthorized, response.status())
+            }
+            handleRequestWithUserId(HttpMethod.Post, url, clientUser.id).apply {
+                assertEquals(HttpStatusCode.Forbidden, response.status())
+            }
+        }
+    }
+
+    @Test
+    fun testChatAdminSend() {
+        val url = "/public/chat/$schoolId/admin-send"
+        val request = """
+            {
+                "text": "${message.text}",
+                "files": []
+            }
+        """.trimIndent()
+        val expectedContent = Json.encodeToString(MessageSchema.fromMessage(message))
+        val supportServiceMock = mock<SupportService> {
+            on { sendMessage(1, Author.SUPPORT, supportUser.id, message.text, message.files) }.doReturn(message)
+        }
+
+        withTestApplication({ admin(service = supportServiceMock) }) {
+            handleAdminRequest(HttpMethod.Post, url, supportUser.id) {
+                addHeader(HttpHeaders.ContentType, "application/json")
+                setBody(request)
+            }.apply {
+                assertEquals(HttpStatusCode.OK, response.status())
+                assertEquals(expectedContent, response.content)
+            }
+        }
+    }
 }
