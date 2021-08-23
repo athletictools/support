@@ -20,7 +20,13 @@ import support.schemas.SendMessageSchema
 
 fun main(args: Array<String>) = EngineMain.main(args)
 
-fun Application.public() {
+fun Application.main() {
+    val service: SupportService by di.instance()
+    client(service)
+    admin(service)
+}
+
+fun Application.client(service: SupportService) {
     install(ContentNegotiation) {
         json()
     }
@@ -29,7 +35,48 @@ fun Application.public() {
             call.respond(HttpStatusCode.BadRequest, mapOf("error" to it.message !!))
         }
     }
-    val service: SupportService by di.instance()
+    install(CheckHeadersFeatures) {
+        checkHeaders {
+            if (call.request.headers["X-UserId"] == null) {
+                call.respond(HttpStatusCode.Unauthorized)
+            }
+        }
+    }
+
+    routing {
+        route("/public") {
+            get("/get-chat/{schoolId}") {
+                getChat(service)
+            }
+            get("/chat/{schoolId}/send") {
+                sendMessage(service, Author.CLIENT)
+            }
+        }
+    }
+}
+
+
+fun Application.admin(service: SupportService) {
+    install(ContentNegotiation) {
+        json()
+    }
+    install(StatusPages) {
+        exception<IllegalArgumentException> {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to it.message !!))
+        }
+    }
+    install(CheckHeadersFeatures) {
+        checkHeaders {
+            if (call.request.headers["X-UserId"] == null) {
+                call.respond(HttpStatusCode.Unauthorized)
+            }
+        }
+        checkHeaders {
+            if (call.request.headers["X-IsAdmin"] != "true") {
+                call.respond(HttpStatusCode.Forbidden)
+            }
+        }
+    }
 
     routing {
         route("/public") {
@@ -39,18 +86,13 @@ fun Application.public() {
             get("/admin-get-chat/{schoolId}") {
                 getAdminChat(service)
             }
-            get("/get-chat/{schoolId}") {
-                getAdminChat(service)
-            }
-            get("/chat/{schoolId}/send") {
-                sendMessage(service, Author.CLIENT)
-            }
             get("/chat/{schoolId}/admin-send") {
                 sendMessage(service, Author.SUPPORT)
             }
         }
     }
 }
+
 typealias Handler = PipelineContext<Unit, ApplicationCall>
 
 suspend fun Handler.getAdminChats(service: SupportService) {
@@ -58,10 +100,18 @@ suspend fun Handler.getAdminChats(service: SupportService) {
     val limit = query["limit"]?.toUInt() ?: throw IllegalArgumentException("limit must be set")
     val offset = query["offset"]?.toUInt() ?: throw IllegalArgumentException("offset must be set")
     val chats = service.getChats(limit, offset)
-    call.respond(chats.map { ChatSchema.fromChat(it) })
+    call.respond(
+        mapOf("chats" to chats.map { ChatSchema.fromChat(it) })
+    )
 }
 
 suspend fun Handler.getAdminChat(service: SupportService) {
+    val schoolId = call.parameters["schoolId"] !!.toInt()
+    val chat = service.getChat(schoolId)
+    call.respond(ChatSchema.fromChat(chat))
+}
+
+suspend fun Handler.getChat(service: SupportService) {
     val schoolId = call.parameters["schoolId"] !!.toInt()
     val chat = service.getChat(schoolId)
     call.respond(ChatSchema.fromChat(chat))
