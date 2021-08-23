@@ -113,4 +113,32 @@ class ServerTest {
             }
         }
     }
+
+    @Test
+    fun testGetAdminChat_OnlyAdminAllowed() {
+        withTestApplication({ admin(service = mock()) }) {
+            handleRequest(HttpMethod.Get, "/public/admin-get-chat/1").apply {
+                assertEquals(HttpStatusCode.Unauthorized, response.status())
+            }
+            handleRequestWithUserId(HttpMethod.Get, "/public/admin-get-chat/1", clientUser.id).apply {
+                assertEquals(HttpStatusCode.Forbidden, response.status())
+            }
+        }
+    }
+
+    @Test
+    fun testGetAdminChat() {
+        val expectedContent = Json.encodeToString(ChatSchema.fromChat(chat))
+        val supportServiceMock = mock<SupportService> {
+            on { getChat(1) }.doReturn(chat)
+        }
+
+        withTestApplication({ admin(service = supportServiceMock) }) {
+            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chat/1", supportUser.id).apply {
+                assertEquals(HttpStatusCode.OK, response.status())
+                assertEquals(expectedContent, response.content)
+            }
+        }
+    }
+
 }
