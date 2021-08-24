@@ -54,6 +54,7 @@ class ServerTest {
     )
     private val chat = Chat(
         schoolId = 1,
+        name = "School's chat",
         messages = listOf(message),
         participants = listOf(supportUser, clientUser)
     )
