@@ -20,13 +20,18 @@ import support.schemas.SendMessageSchema
 
 fun main(args: Array<String>) = EngineMain.main(args)
 
-fun Application.main() {
-    val service: SupportService by di.instance()
-    client(service)
-    admin(service)
+fun Application.client() {
+    val srv: SupportService by di.instance()
+    testableClient(srv)
 }
 
-fun Application.client(service: SupportService) {
+
+fun Application.admin() {
+    val srv: SupportService by di.instance()
+    testableAdmin(srv)
+}
+
+fun Application.testableClient(service: SupportService) {
     install(ContentNegotiation) {
         json()
     }
@@ -41,22 +46,26 @@ fun Application.client(service: SupportService) {
                 call.respond(HttpStatusCode.Unauthorized)
             }
         }
+        checkHeaders {
+            if (call.request.headers["X-CompanyId"] == null) {
+                call.respond(HttpStatusCode.Unauthorized)
+            }
+        }
     }
 
     routing {
         route("/public") {
-            get("/get-chat/{schoolId}") {
+            get("/get-chat") {
                 getChat(service)
             }
-            post("/chat/{schoolId}/send") {
+            post("/chat/send") {
                 sendMessage(service, Author.CLIENT)
             }
         }
     }
 }
 
-
-fun Application.admin(service: SupportService) {
+fun Application.testableAdmin(service: SupportService) {
     install(ContentNegotiation) {
         json()
     }
@@ -116,7 +125,8 @@ suspend fun Handler.getAdminChat(service: SupportService) {
 }
 
 suspend fun Handler.getChat(service: SupportService) {
-    val schoolId = call.parameters["schoolId"] !!.toInt()
+    val schoolId = call.request.headers["X-CompanyId"] !!.toInt()
+    println(schoolId)
     val chat = service.getChat(schoolId)
     if (chat == null) {
         call.respond(HttpStatusCode.NotFound)

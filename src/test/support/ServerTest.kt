@@ -21,11 +21,13 @@ fun TestApplicationEngine.handleRequestWithUserId(
     method: HttpMethod,
     uri: String,
     userId: Int,
+    companyId: Int,
     setup: TestApplicationRequest.() -> Unit = {}
 ): TestApplicationCall = handleRequest {
     this.uri = uri
     this.method = method
     addHeader("X-UserId", userId.toString())
+    addHeader("X-CompanyId", companyId.toString())
     setup()
 }
 
@@ -33,8 +35,9 @@ fun TestApplicationEngine.handleAdminRequest(
     method: HttpMethod,
     uri: String,
     userId: Int,
+    companyId: Int,
     setup: TestApplicationRequest.() -> Unit = {}
-): TestApplicationCall = handleRequestWithUserId(method, uri, userId) {
+): TestApplicationCall = handleRequestWithUserId(method, uri, userId, companyId) {
     addHeader("X-IsAdmin", "true")
     setup()
 }
@@ -61,11 +64,16 @@ class ServerTest {
 
     @Test
     fun testGetAdminChats_OnlyAdminAllowed() {
-        withTestApplication({ admin(service = mock()) }) {
+        withTestApplication({ testableAdmin(service = mock()) }) {
             handleRequest(HttpMethod.Get, "/public/admin-get-chats?limit=10&offset=0").apply {
                 assertEquals(HttpStatusCode.Unauthorized, response.status())
             }
-            handleRequestWithUserId(HttpMethod.Get, "/public/admin-get-chats?limit=10&offset=0", clientUser.id).apply {
+            handleRequestWithUserId(
+                HttpMethod.Get,
+                "/public/admin-get-chats?limit=10&offset=0",
+                clientUser.id,
+                schoolId
+            ).apply {
                 assertEquals(HttpStatusCode.Forbidden, response.status())
             }
         }
@@ -76,12 +84,18 @@ class ServerTest {
         val expectedContent = Json.encodeToString(
             mapOf("chats" to listOf(ChatSchema.fromChat(chat)))
         )
+
         val supportServiceMock = mock<SupportService> {
-            on { getChats(10u, 0u) }.doReturn(listOf(chat))
+            onBlocking { getChats(10u, 0u) }.doReturn(listOf(chat))
         }
 
-        withTestApplication({ admin(service = supportServiceMock) }) {
-            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chats?limit=10&offset=0", supportUser.id).apply {
+        withTestApplication({ testableAdmin(service = supportServiceMock) }) {
+            handleAdminRequest(
+                HttpMethod.Get,
+                "/public/admin-get-chats?limit=10&offset=0",
+                supportUser.id,
+                schoolId
+            ).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(expectedContent, response.content)
             }
@@ -90,12 +104,12 @@ class ServerTest {
 
     @Test
     fun testGetAdminChats_limitRequiredAndMustBeValidNumber() {
-        withTestApplication({ admin(service = mock()) }) {
-            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chats?offset=0", supportUser.id).apply {
+        withTestApplication({ testableAdmin(service = mock()) }) {
+            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chats?offset=0", supportUser.id, schoolId).apply {
                 assertEquals(HttpStatusCode.BadRequest, response.status())
                 assertEquals("""{"error":"limit must be set"}""", response.content)
             }
-            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chats?limit=NaN", supportUser.id).apply {
+            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chats?limit=NaN", supportUser.id, schoolId).apply {
                 assertEquals(HttpStatusCode.BadRequest, response.status())
                 assertEquals("""{"error":"Invalid number format: 'NaN'"}""", response.content)
             }
@@ -105,12 +119,17 @@ class ServerTest {
     @Test
     fun testGetAdminChats_offsetRequiredAndMustBeValidNumber() {
         val expectedContent = """{"error":"offset must be set"}"""
-        withTestApplication({ admin(service = mock()) }) {
-            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chats?limit=10", supportUser.id).apply {
+        withTestApplication({ testableAdmin(service = mock()) }) {
+            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chats?limit=10", supportUser.id, schoolId).apply {
                 assertEquals(HttpStatusCode.BadRequest, response.status())
                 assertEquals(expectedContent, response.content)
             }
-            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chats?limit=10&offset=NaN", supportUser.id).apply {
+            handleAdminRequest(
+                HttpMethod.Get,
+                "/public/admin-get-chats?limit=10&offset=NaN",
+                supportUser.id,
+                schoolId
+            ).apply {
                 assertEquals(HttpStatusCode.BadRequest, response.status())
                 assertEquals("""{"error":"Invalid number format: 'NaN'"}""", response.content)
             }
@@ -119,11 +138,11 @@ class ServerTest {
 
     @Test
     fun testGetAdminChat_OnlyAdminAllowed() {
-        withTestApplication({ admin(service = mock()) }) {
+        withTestApplication({ testableAdmin(service = mock()) }) {
             handleRequest(HttpMethod.Get, "/public/admin-get-chat/$schoolId").apply {
                 assertEquals(HttpStatusCode.Unauthorized, response.status())
             }
-            handleRequestWithUserId(HttpMethod.Get, "/public/admin-get-chat/$schoolId", clientUser.id).apply {
+            handleRequestWithUserId(HttpMethod.Get, "/public/admin-get-chat/$schoolId", clientUser.id, schoolId).apply {
                 assertEquals(HttpStatusCode.Forbidden, response.status())
             }
         }
@@ -133,11 +152,11 @@ class ServerTest {
     fun testGetAdminChat() {
         val expectedContent = Json.encodeToString(ChatSchema.fromChat(chat))
         val supportServiceMock = mock<SupportService> {
-            on { getChat(1) }.doReturn(chat)
+            onBlocking { getChat(1) }.doReturn(chat)
         }
 
-        withTestApplication({ admin(service = supportServiceMock) }) {
-            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chat/$schoolId", supportUser.id).apply {
+        withTestApplication({ testableAdmin(service = supportServiceMock) }) {
+            handleAdminRequest(HttpMethod.Get, "/public/admin-get-chat/$schoolId", supportUser.id, schoolId).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(expectedContent, response.content)
             }
@@ -147,11 +166,11 @@ class ServerTest {
     @Test
     fun testAdminSendMessage_OnlyAdminAllowed() {
         val url = "/public/chat/$schoolId/admin-send"
-        withTestApplication({ admin(service = mock()) }) {
+        withTestApplication({ testableAdmin(service = mock()) }) {
             handleRequest(HttpMethod.Post, url).apply {
                 assertEquals(HttpStatusCode.Unauthorized, response.status())
             }
-            handleRequestWithUserId(HttpMethod.Post, url, clientUser.id).apply {
+            handleRequestWithUserId(HttpMethod.Post, url, clientUser.id, schoolId).apply {
                 assertEquals(HttpStatusCode.Forbidden, response.status())
             }
         }
@@ -168,11 +187,11 @@ class ServerTest {
         """.trimIndent()
         val expectedContent = Json.encodeToString(MessageSchema.fromMessage(message))
         val supportServiceMock = mock<SupportService> {
-            on { sendMessage(1, Author.SUPPORT, supportUser.id, message.text, message.files) }.doReturn(message)
+            onBlocking { sendMessage(1, Author.SUPPORT, supportUser.id, message.text, message.files) }.doReturn(message)
         }
 
-        withTestApplication({ admin(service = supportServiceMock) }) {
-            handleAdminRequest(HttpMethod.Post, url, supportUser.id) {
+        withTestApplication({ testableAdmin(service = supportServiceMock) }) {
+            handleAdminRequest(HttpMethod.Post, url, supportUser.id, schoolId) {
                 addHeader(HttpHeaders.ContentType, "application/json")
                 setBody(request)
             }.apply {
@@ -183,9 +202,9 @@ class ServerTest {
     }
 
     @Test
-    fun testGetChat_AuthUserAllowed() {
-        val url = "/public/get-chat/$schoolId"
-        withTestApplication({ client(service = mock()) }) {
+    fun testGetChat_NonAuthUserUnauthorized() {
+        val url = "/public/get-chat"
+        withTestApplication({ testableClient(service = mock()) }) {
             handleRequest(HttpMethod.Post, url).apply {
                 assertEquals(HttpStatusCode.Unauthorized, response.status())
             }
@@ -196,11 +215,11 @@ class ServerTest {
     fun testGetChat() {
         val expectedContent = Json.encodeToString(ChatSchema.fromChat(chat))
         val supportServiceMock = mock<SupportService> {
-            on { getChat(1) }.doReturn(chat)
+            onBlocking { getChat(schoolId) }.doReturn(chat)
         }
 
-        withTestApplication({ client(service = supportServiceMock) }) {
-            handleRequestWithUserId(HttpMethod.Get, "/public/get-chat/$schoolId", clientUser.id).apply {
+        withTestApplication({ testableClient(service = supportServiceMock) }) {
+            handleRequestWithUserId(HttpMethod.Get, "/public/get-chat", clientUser.id, schoolId).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(expectedContent, response.content)
             }
@@ -210,11 +229,11 @@ class ServerTest {
     @Test
     fun testGetChat_NotFound_Return404() {
         val supportServiceMock = mock<SupportService> {
-            on { getChat(1) }.doReturn(null)
+            onBlocking { getChat(schoolId) }.doReturn(null)
         }
 
-        withTestApplication({ client(service = supportServiceMock) }) {
-            handleRequestWithUserId(HttpMethod.Get, "/public/get-chat/$schoolId", clientUser.id).apply {
+        withTestApplication({ testableClient(service = supportServiceMock) }) {
+            handleRequestWithUserId(HttpMethod.Get, "/public/get-chat", clientUser.id, schoolId).apply {
                 assertEquals(HttpStatusCode.NotFound, response.status())
             }
         }

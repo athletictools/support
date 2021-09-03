@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.daemon.client.KotlinCompilerClient.compile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -14,11 +15,12 @@ repositories {
 }
 
 val ktorVersion = "1.6.2"
+val exposedVersion = "0.31.1"
 
 dependencies {
     testImplementation(kotlin("test-junit5"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("org.mockito.kotlin:mockito-kotlin:3.2.0")
 
@@ -26,8 +28,9 @@ dependencies {
     implementation("com.auth0:java-jwt:3.18.1")
     implementation("io.ktor:ktor-serialization:$ktorVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
-    implementation("org.slf4j:slf4j-simple:1.7.25")
-    implementation("org.kodein.di:kodein-di:7.6.0")
+    implementation("org.slf4j:slf4j-simple:1.7.32")
+    implementation("org.kodein.di:kodein-di:7.7.0")
+    implementation("org.litote.kmongo:kmongo-coroutine:4.2.8")
 }
 
 tasks.test {
@@ -38,7 +41,6 @@ kotlin {
     sourceSets {
         main {
             kotlin.srcDir("src/main")
-            resources.srcDir("src/resources")
         }
         test {
             kotlin.srcDir("src/test")
@@ -47,7 +49,7 @@ kotlin {
 }
 
 tasks.withType<KotlinCompile>() {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "16"
 }
 
 application {
