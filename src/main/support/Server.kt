@@ -126,7 +126,6 @@ suspend fun Handler.getAdminChat(service: SupportService) {
 
 suspend fun Handler.getChat(service: SupportService) {
     val schoolId = call.request.headers["X-CompanyId"] !!.toInt()
-    println(schoolId)
     val chat = service.getChat(schoolId)
     if (chat == null) {
         call.respond(HttpStatusCode.NotFound)

@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.daemon.client.KotlinCompilerClient.compile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
