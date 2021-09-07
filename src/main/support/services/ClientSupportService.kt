@@ -43,7 +43,7 @@ class ClientSupportService(
             chat.participants.first { it.id == userId }
         }
         val message = Message(
-            Author.CLIENT,
+            author = author,
             user = user,
             text = text,
             files = files,

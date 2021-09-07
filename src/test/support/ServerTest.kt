@@ -230,17 +230,4 @@ class ServerTest {
             }
         }
     }
-
-    @Test
-    fun testGetChat_NotFound_Return404() {
-        val supportServiceMock = mock<SupportService> {
-            onBlocking { getChat(schoolId) }.doReturn(null)
-        }
-
-        withTestApplication({ testableModule(service = supportServiceMock) }) {
-            handleRequestWithUserId(HttpMethod.Get, "/public/get-chat", clientUser.id, schoolId).apply {
-                assertEquals(HttpStatusCode.NotFound, response.status())
-            }
-        }
-    }
 }

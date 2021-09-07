@@ -8,6 +8,6 @@ import support.entities.Message
 
 interface SupportService {
     suspend fun getChats(limit: UInt, offset: UInt): List<Chat>
-    suspend fun getChat(schoolId: Int): Chat?
+    suspend fun getChat(schoolId: Int): Chat
     suspend fun sendMessage(schoolId: Int, author: Author, userId: Int, text: String, files: List<File>): Message
 }
