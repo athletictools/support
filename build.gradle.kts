@@ -52,5 +52,5 @@ tasks.withType<KotlinCompile>() {
 }
 
 application {
-    mainClass.set("ServerKt")
+    mainClass.set("support.ServerKt")
 }
