@@ -1,18 +1,18 @@
 package support.repositories
 
-import org.bson.conversions.Bson
-import org.litote.kmongo.*
+import org.litote.kmongo.combine
 import org.litote.kmongo.coroutine.CoroutineDatabase
+import org.litote.kmongo.eq
+import org.litote.kmongo.setValue
 import support.di.ChatRepository
 import support.entities.Chat
 import support.entities.Message
 import support.entities.User
 
 
-class MongoChatRepository(private val db: CoroutineDatabase): ChatRepository {
+class MongoChatRepository(db: CoroutineDatabase): ChatRepository {
     private val collection = db.getCollection<Chat>("chats")
     override suspend fun get(schoolId: Int): Chat? {
-        println(collection.toString())
         return collection.findOne(Chat::schoolId eq schoolId)
     }
 

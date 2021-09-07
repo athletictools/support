@@ -72,7 +72,7 @@ class TestClientSupportService {
             files = emptyList(),
             created = now,
             updated = now,
-            isReadBy = listOf(clientUser)
+            isReadBy = emptyList()
         )
         val emptyChat = Chat(schoolId = schoolId, name = "new school")
         val updatedChat = emptyChat.copy(messages = listOf(expectedMessage))
@@ -81,8 +81,10 @@ class TestClientSupportService {
             onBlocking { get(schoolId) }.doReturn(emptyChat)
             onBlocking { save(updatedChat) }.doReturn(Unit)
         }
-        val nowMock = Now { throw Exception() }
-        val usersClientMock = mock<UsersClient>()
+        val nowMock = Now { now }
+        val usersClientMock = mock<UsersClient> {
+            onBlocking { getInfo(clientUser.id) }.doReturn(clientUser)
+        }
 
         val message = runBlocking {
             ClientSupportService(nowMock, repoMock, usersClientMock).sendMessage(

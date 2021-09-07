@@ -1,6 +1,6 @@
 package support.entities
 
-data class Chat (
+data class Chat(
     val schoolId: Int,
     val name: String,
     val messages: List<Message> = emptyList(),

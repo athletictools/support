@@ -4,8 +4,10 @@ import support.di.ChatRepository
 import support.di.Now
 import support.di.SupportService
 import support.di.UsersClient
-import support.entities.*
-
+import support.entities.Author
+import support.entities.Chat
+import support.entities.File
+import support.entities.Message
 
 class ClientSupportService(
     private val now: Now,
