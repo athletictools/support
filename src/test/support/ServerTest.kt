@@ -80,6 +80,7 @@ class ServerTest {
     }
 
     @Test
+    @kotlinx.serialization.ExperimentalSerializationApi
     fun testGetAdminChats() {
         val expectedContent = Json.encodeToString(
             mapOf("chats" to listOf(ChatSchema.fromChat(chat)))
@@ -149,6 +150,7 @@ class ServerTest {
     }
 
     @Test
+    @kotlinx.serialization.ExperimentalSerializationApi
     fun testGetAdminChat() {
         val expectedContent = Json.encodeToString(ChatSchema.fromChat(chat))
         val supportServiceMock = mock<SupportService> {
@@ -177,6 +179,7 @@ class ServerTest {
     }
 
     @Test
+    @kotlinx.serialization.ExperimentalSerializationApi
     fun testChatAdminSend() {
         val url = "/public/chat/$schoolId/admin-send"
         val request = """
@@ -212,6 +215,7 @@ class ServerTest {
     }
 
     @Test
+    @kotlinx.serialization.ExperimentalSerializationApi
     fun testGetChat() {
         val expectedContent = Json.encodeToString(ChatSchema.fromChat(chat))
         val supportServiceMock = mock<SupportService> {

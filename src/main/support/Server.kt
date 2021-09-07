@@ -59,7 +59,7 @@ fun Application.testableClient(service: SupportService) {
                 getChat(service)
             }
             post("/chat/send") {
-                sendMessage(service, Author.CLIENT)
+                sendMessage(service)
             }
         }
     }
@@ -96,7 +96,7 @@ fun Application.testableAdmin(service: SupportService) {
                 getAdminChat(service)
             }
             post("/chat/{schoolId}/admin-send") {
-                sendMessage(service, Author.SUPPORT)
+                sendAdminMessage(service)
             }
         }
     }
@@ -134,14 +134,28 @@ suspend fun Handler.getChat(service: SupportService) {
     call.respond(ChatSchema.fromChat(chat))
 }
 
-suspend fun Handler.sendMessage(service: SupportService, author: Author) {
+suspend fun Handler.sendAdminMessage(service: SupportService) {
     val schoolId = call.parameters["schoolId"] !!.toInt()
-    val userId = call.request.headers["X-UserId"] !!
+    val userId = call.request.headers["X-UserId"] !!.toInt()
     val sendMessageSchema: SendMessageSchema = call.receive()
     val message = service.sendMessage(
         schoolId,
-        author = author,
-        userId = userId.toInt(),
+        author = Author.SUPPORT,
+        userId = userId,
+        text = sendMessageSchema.text,
+        files = sendMessageSchema.files.map { File(it.hash) }
+    )
+    call.respond(MessageSchema.fromMessage(message))
+}
+
+suspend fun Handler.sendMessage(service: SupportService) {
+    val schoolId = call.request.headers["X-CompanyId"] !!.toInt()
+    val userId = call.request.headers["X-UserId"] !!.toInt()
+    val sendMessageSchema: SendMessageSchema = call.receive()
+    val message = service.sendMessage(
+        schoolId,
+        author = Author.CLIENT,
+        userId = userId,
         text = sendMessageSchema.text,
         files = sendMessageSchema.files.map { File(it.hash) }
     )

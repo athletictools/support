@@ -11,6 +11,8 @@ import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.runBlocking
+import support.di.Now
+import support.di.UsersClient
 
 class TestClientSupportService {
     private val schoolId = 1
@@ -37,7 +39,10 @@ class TestClientSupportService {
         val repoMock = mock<ChatRepository> {
             onBlocking { get(schoolId) }.doReturn(chat)
         }
-        val resultChat = runBlocking { ClientSupportService(repoMock).getChat(schoolId) }
+        val nowMock = Now { throw Exception() }
+        val usersClientMock = mock<UsersClient>()
+
+        val resultChat = runBlocking { ClientSupportService(nowMock, repoMock, usersClientMock).getChat(schoolId) }
 
         assertEquals(chat, resultChat)
     }
@@ -49,10 +54,46 @@ class TestClientSupportService {
             onBlocking { get(schoolId) }.doReturn(null)
             onBlocking { save(chat) }.doReturn(Unit)
         }
+        val nowMock = Now { throw Exception() }
+        val usersClientMock = mock<UsersClient>()
 
-        val resultChat = runBlocking { ClientSupportService(repoMock).getChat(schoolId) }
+        val resultChat = runBlocking { ClientSupportService(nowMock, repoMock, usersClientMock).getChat(schoolId) }
 
         assertEquals(expectedChat, resultChat)
     }
-}
 
+    @Test
+    fun `send message from client`() {
+        val now = Date()
+        val expectedMessage = Message(
+            Author.CLIENT,
+            user = clientUser,
+            text = "msg text",
+            files = emptyList(),
+            created = now,
+            updated = now,
+            isReadBy = listOf(clientUser)
+        )
+        val emptyChat = Chat(schoolId = schoolId, name = "new school")
+        val updatedChat = emptyChat.copy(messages = listOf(expectedMessage))
+
+        val repoMock = mock<ChatRepository> {
+            onBlocking { get(schoolId) }.doReturn(emptyChat)
+            onBlocking { save(updatedChat) }.doReturn(Unit)
+        }
+        val nowMock = Now { throw Exception() }
+        val usersClientMock = mock<UsersClient>()
+
+        val message = runBlocking {
+            ClientSupportService(nowMock, repoMock, usersClientMock).sendMessage(
+                schoolId,
+                Author.CLIENT,
+                userId = clientUser.id,
+                text = "msg text",
+                files = emptyList(),
+            )
+        }
+
+        assertEquals(expectedMessage, message)
+    }
+}

@@ -14,5 +14,5 @@ data class Message(
     val files: List<File>,
     val created: Date,
     val updated: Date,
-    val isReadBy: List<User>
+    val isReadBy: List<User> = emptyList()
 )
