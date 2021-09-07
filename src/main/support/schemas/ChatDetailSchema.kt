@@ -5,14 +5,14 @@ import support.entities.Chat
 
 
 @Serializable
-class ChatSchema(
+class ChatDetailSchema(
     val schoolId: Int,
     val name: String,
     val messages: List<MessageSchema>,
     val participants: List<UserSchema>,
 ) {
     companion object {
-        fun fromChat(chat: Chat) = ChatSchema(
+        fun fromChat(chat: Chat) = ChatDetailSchema(
             schoolId = chat.schoolId,
             name = chat.name,
             messages = chat.messages.map { MessageSchema.fromMessage(it) },

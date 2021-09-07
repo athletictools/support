@@ -5,6 +5,7 @@ import support.entities.Message
 import support.entities.User
 
 interface ChatRepository {
+    suspend fun list(limit: UInt, offset: UInt): List<Chat>
     suspend fun get(schoolId: Int): Chat?
     suspend fun save(chat: Chat)
     suspend fun update(

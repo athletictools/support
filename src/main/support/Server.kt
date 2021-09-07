@@ -14,24 +14,20 @@ import support.di.SupportService
 import support.di.di
 import support.entities.Author
 import support.entities.File
-import support.schemas.ChatSchema
+import support.schemas.ChatDetailSchema
+import support.schemas.ChatListSchema
 import support.schemas.MessageSchema
 import support.schemas.SendMessageSchema
 
 fun main(args: Array<String>) = EngineMain.main(args)
 
-fun Application.client() {
+fun Application.module() {
     val srv: SupportService by di.instance()
-    testableClient(srv)
+    testableModule(srv)
 }
 
 
-fun Application.admin() {
-    val srv: SupportService by di.instance()
-    testableAdmin(srv)
-}
-
-fun Application.testableClient(service: SupportService) {
+fun Application.testableModule(service: SupportService) {
     install(ContentNegotiation) {
         json()
     }
@@ -61,42 +57,23 @@ fun Application.testableClient(service: SupportService) {
             post("/chat/send") {
                 sendMessage(service)
             }
-        }
-    }
-}
-
-fun Application.testableAdmin(service: SupportService) {
-    install(ContentNegotiation) {
-        json()
-    }
-    install(StatusPages) {
-        exception<IllegalArgumentException> {
-            call.respond(HttpStatusCode.BadRequest, mapOf("error" to it.message !!))
-        }
-    }
-    install(CheckHeadersFeatures) {
-        checkHeaders {
-            if (call.request.headers["X-UserId"] == null) {
-                call.respond(HttpStatusCode.Unauthorized)
-            }
-        }
-        checkHeaders {
-            if (call.request.headers["X-IsAdmin"] != "true") {
-                call.respond(HttpStatusCode.Forbidden)
-            }
-        }
-    }
-
-    routing {
-        route("/public") {
-            get("/admin-get-chats") {
-                getAdminChats(service)
-            }
-            get("/admin-get-chat/{schoolId}") {
-                getAdminChat(service)
-            }
-            post("/chat/{schoolId}/admin-send") {
-                sendAdminMessage(service)
+            route("/admin") {
+                install(CheckHeadersFeatures) {
+                    checkHeaders {
+                        if (call.request.headers["X-IsAdmin"] != "true") {
+                            call.respond(HttpStatusCode.Forbidden)
+                        }
+                    }
+                }
+                get("/get-chats") {
+                    getAdminChats(service)
+                }
+                get("/get-chat/{schoolId}") {
+                    getAdminChat(service)
+                }
+                post("/chat/{schoolId}/send") {
+                    sendAdminMessage(service)
+                }
             }
         }
     }
@@ -110,7 +87,7 @@ suspend fun Handler.getAdminChats(service: SupportService) {
     val offset = query["offset"]?.toUInt() ?: throw IllegalArgumentException("offset must be set")
     val chats = service.getChats(limit, offset)
     call.respond(
-        mapOf("chats" to chats.map { ChatSchema.fromChat(it) })
+        mapOf("chats" to chats.map { ChatListSchema.fromChat(it) })
     )
 }
 
@@ -121,7 +98,7 @@ suspend fun Handler.getAdminChat(service: SupportService) {
         call.respond(HttpStatusCode.NotFound)
         return
     }
-    call.respond(ChatSchema.fromChat(chat))
+    call.respond(ChatDetailSchema.fromChat(chat))
 }
 
 suspend fun Handler.getChat(service: SupportService) {
@@ -131,7 +108,7 @@ suspend fun Handler.getChat(service: SupportService) {
         call.respond(HttpStatusCode.NotFound)
         return
     }
-    call.respond(ChatSchema.fromChat(chat))
+    call.respond(ChatDetailSchema.fromChat(chat))
 }
 
 suspend fun Handler.sendAdminMessage(service: SupportService) {

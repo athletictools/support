@@ -1,9 +1,7 @@
 package support.repositories
 
-import org.litote.kmongo.combine
+import org.litote.kmongo.*
 import org.litote.kmongo.coroutine.CoroutineDatabase
-import org.litote.kmongo.eq
-import org.litote.kmongo.setValue
 import support.di.ChatRepository
 import support.entities.Chat
 import support.entities.Message
@@ -12,6 +10,11 @@ import support.entities.User
 
 class MongoChatRepository(db: CoroutineDatabase): ChatRepository {
     private val collection = db.getCollection<Chat>("chats")
+
+    override suspend fun list(limit: UInt, offset: UInt): List<Chat> {
+        return collection.find().limit(limit.toInt()).skip(offset.toInt()).toList()
+    }
+
     override suspend fun get(schoolId: Int): Chat? {
         return collection.findOne(Chat::schoolId eq schoolId)
     }

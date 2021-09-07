@@ -15,7 +15,7 @@ class ClientSupportService(
     private val usersClient: UsersClient,
 ) : SupportService {
     override suspend fun getChats(limit: UInt, offset: UInt): List<Chat> {
-        TODO("Not yet implemented")
+        return repository.list(limit, offset)
     }
 
     override suspend fun getChat(schoolId: Int): Chat {
@@ -26,10 +26,6 @@ class ClientSupportService(
         val newChat = Chat(schoolId = schoolId, name = "unknown")
         repository.save(newChat)
         return newChat
-    }
-
-    override suspend fun getChatUnreadCount(schoolId: Int, userId: Int): UInt {
-        TODO("Not yet implemented")
     }
 
     override suspend fun sendMessage(
