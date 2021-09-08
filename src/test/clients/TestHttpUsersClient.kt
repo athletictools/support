@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 class TestHttpUsersClient {
     @Test
     fun testGetInfo() {
-        val expectedUser = User(id = 1, fullName = "Ivanov Ivan")
+        val expectedUser = User(id = 2, fullName = "Ivanov Ivan")
         val client = HttpUsersClient()
         assertEquals(expectedUser, runBlocking { client.getInfo(1) })
     }
